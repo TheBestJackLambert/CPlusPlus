@@ -34,7 +34,7 @@ std::string intotochar(std::vector<int> txt){
     int place = 0;
     char character;
     int mod;
-    for (int j: txt){
+    for (int j: txt){ 
         std::string letter = "";
         for (int i = 3; i >= 0; i--){
             place = 0;
