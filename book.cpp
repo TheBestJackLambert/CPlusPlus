@@ -124,7 +124,7 @@ void home(){
     attron(A_BOLD);
     addstr("Contact Book");
     addstr("\n");
-    addstr("Contacts:\n");
+    addstr("Contacts:");
     attroff(A_BOLD);
     for (auto [label, contacter] : contacts){
         addstr((label + "\n").c_str());
@@ -141,8 +141,7 @@ void edit(std::string person, std::string component, std::string replacement){
     };
 };
 
-void opencontact(std::string input){
-    clear();
+void showcontact(std::string input){
     for(int i = 0; i < contacts[input].filled.size(); i++){
         if (contacts[input].filled[i]){
             attron(A_BOLD);
@@ -151,28 +150,19 @@ void opencontact(std::string input){
             addstr((contacts[input].obtain(i) + "\n").c_str());
         };
     };
+};
+
+void opencontact(std::string input){
+    clear();
+    showcontact(input);
     refresh();
     getstr(typed);
     contactinput = std::string(typed);
     if (contactinput == "edit"){
         clear();
-        for(int i = 0; i < contacts[input].filled.size(); i++){
-            if (contacts[input].filled[i]){
-                attron(A_BOLD);
-                addstr((labels[i] + "\n").c_str());
-                attroff(A_BOLD);
-                addstr((contacts[input].obtain(i) + "\n").c_str());
-            };
-        };
+        showcontact(input);
         addstr("What do you want to edit?\n");
-        refresh();for(int i = 0; i < contacts[input].filled.size(); i++){
-        if (contacts[input].filled[i]){
-            attron(A_BOLD);
-            addstr((labels[i] + "\n").c_str());
-            attroff(A_BOLD);
-            addstr((contacts[input].obtain(i) + "\n").c_str());
-        };
-    };
+        refresh();
         getstr(typed);
         contactinput = std::string(typed);
         if (!options.contains(contactinput)){
@@ -181,14 +171,7 @@ void opencontact(std::string input){
         };
         refresh();
         clear();
-        for(int i = 0; i < contacts[input].filled.size(); i++){
-            if (contacts[input].filled[i]){
-                attron(A_BOLD);
-                addstr((labels[i] + "\n").c_str());
-                attroff(A_BOLD);
-                addstr((contacts[input].obtain(i) + "\n").c_str());
-            };
-        };
+        showcontact(input);
         addstr((contactinput + ": ").c_str());
         refresh();
         getstr(typed);
