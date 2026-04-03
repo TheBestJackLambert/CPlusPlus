@@ -6,91 +6,33 @@
 #include <fstream>
 #include <set>
 #include <iostream>
+#include <optional>
 
 class contact{
-
-    private:
-
-    std::string name;
-    std::string number;
-    std::string email;
-    std::string notes = "";
-
     public:
-    std::vector<bool> filled = {0,0,0,0};
+    std::map<std::string, std::string> information;
 
-    void initialize(std::string na, std::string nu, std::string em, std::string no){
-        edit("name", na);
-        edit("email", em);
-        edit("number", nu);
-        edit("notes", no);
+    std::optional<std::string> get(std::string request){
+        if (information.contains(request)){
+            return information.at(request);
+        };
+        return std::nullopt;
     };
-
-    std::string get(std::string request){
-        std::map<std::string, std::string> items = {
-        {"name", name},
-        {"email", email},
-        {"number", number},
-        {"notes", notes}
-        };
-
-        return items.at(request);
-    }
-
-    std::string obtain(int request){
-        std::map<int, std::string> items = {
-        {0, name},
-        {1, email},
-        {2, number},
-        {3, notes}
-        };
-        return items.at(request);
-    }
-
 
     void edit(std::string type, std::string info){
 
-        std::map<std::string, std::function<void(std::string)>> typecreate = {
-        {"name", [this](std::string info){namemaker(info);} },
-        {"email", [this](std::string info){emailmaker(info);} },
-        {"number", [this](std::string info){numbermaker(info);} },
-        {"notes", [this](std::string info){noter(info);} }
-        };
-
-        typecreate.at(type)(info);
-    };
-
-    void namemaker(std::string username){
-        if(username != ""){
-            name = username;
-            filled[0] = true;
+        if (information.contains(type)){
+            information[type] = info;
+        }
+        else{
+            information.insert({type, info});
         };
     };
 
-    void emailmaker(std::string mail){
-        if(mail != ""){
-            email = mail;
-            filled[1] = true;
+    void remove(std::string type){
+        if (information.contains(type)){
+            information.erase(type);
         };
-    };
-
-    void numbermaker(std::string numbo){
-        if(numbo != ""){
-            number = numbo;
-            filled[2] = true;
-        };
-    };
-
-    void noter(std::string note){
-        if(note != ""){
-            notes = notes + note + '\n';
-            filled[3] = true;
-        };
-    };
-
-    void removenote(){
-        notes = "";
-        filled[3] = false;
     };
 };
 
@@ -103,28 +45,16 @@ std::string line;
 char typed[255];
 std::string input;
 std::string contactinput;
-std::set<std::string> options = {"name", "email", "number", "notes"};
 std::string newpart;
 bool swap;
 
-std::map <int, std::string> labels = {
-    {0, "Name:"},
-    {1, "Email:"},
-    {2, "Number:"},
-    {3, "Notes:"}
-};
-std::map <int, std::string> labe = {
-    {0, "name:"},
-    {1, "email:"},
-    {2, "number:"},
-    {3, "notes:"}
-};
 void home(){
     clear();
     attron(A_BOLD);
     addstr("Contact Book");
     addstr("\n");
     addstr("Contacts:");
+    addstr("\n");
     attroff(A_BOLD);
     for (auto [label, contacter] : contacts){
         addstr((label + "\n").c_str());
@@ -142,13 +72,18 @@ void edit(std::string person, std::string component, std::string replacement){
 };
 
 void showcontact(std::string input){
-    for(int i = 0; i < contacts[input].filled.size(); i++){
-        if (contacts[input].filled[i]){
-            attron(A_BOLD);
-            addstr((labels[i] + "\n").c_str());
-            attroff(A_BOLD);
-            addstr((contacts[input].obtain(i) + "\n").c_str());
-        };
+    attron(A_BOLD);
+    addstr("Name: \n");
+    attroff(A_BOLD);
+    addstr((input + "\n").c_str());
+    for(auto [label, info] : contacts[input].information){
+        if (label == "name"){
+                continue;
+            };
+        attron(A_BOLD);
+        addstr((label + "\n").c_str());
+        attroff(A_BOLD);
+        addstr((info + "\n").c_str());
     };
 };
 
@@ -165,10 +100,6 @@ void opencontact(std::string input){
         refresh();
         getstr(typed);
         contactinput = std::string(typed);
-        if (!options.contains(contactinput)){
-            home();
-            return;
-        };
         refresh();
         clear();
         showcontact(input);
@@ -186,7 +117,21 @@ void opencontact(std::string input){
         refresh();
     }
     else{
-        home();
+        if (contactinput == "remove"){
+            clear();
+            showcontact(input);
+            addstr("What do you want to remove?\n");
+            refresh();
+            getstr(typed);
+            contactinput = std::string(typed);
+            if (contactinput != "name"){
+                contacts[input].remove(contactinput);
+            }
+            opencontact(input);
+        }
+        else{
+            home();
+        };
     };
 };
 
@@ -194,16 +139,11 @@ int main(){
     std::ifstream read("contacts.txt");
 
     contact readin;
+    readin = contact{};
+    std::string name;
     while (getline(read, line)){
-        if (line[0] == '|'){
-            contacts.insert({readin.get("name"), readin});
-            readin = contact{};
+        if (line.find(':') == std::string::npos){
             continue;
-        }
-        else{
-            if (line.find(':') == std::string::npos){
-                continue;
-            };
         };
         std::string temp1 = "";
         std::string temp2 = "";
@@ -214,7 +154,7 @@ int main(){
                     swap = false;
                 }
                 else{
-                temp1 = temp1 + (i);
+                    temp1 = temp1 + (i);
                 };
             }
             else{
@@ -229,11 +169,12 @@ int main(){
             };
                 
         };
-        readin.edit(temp1, temp2);
-    };
-    if (readin.filled[0]){
-        contacts.insert({readin.get("name"), readin});
-        readin = contact{};
+        if (temp1 == "name"){
+            contacts.insert({temp2, readin});
+            name = temp2;
+        };
+        contacts[name].edit(temp1, temp2);
+
     };
     initscr();
     home();
@@ -282,11 +223,14 @@ int main(){
     endwin();
     read.close();
     std::ofstream file("contacts.txt");
+    file << "|" << std::endl;
     for (auto [label, contacter] : contacts){
-        for(int i = 0; i < contacter.filled.size(); i++){
-            if (contacts[label].filled[i]){
-                file << (labe[i] + contacter.obtain(i)) << std::endl;
+        file << ("name: " + label) << std::endl;
+        for(auto [tag, info] : contacter.information){
+            if (tag == "name"){
+                continue;
             };
+            file << (tag + ": " + info) << std::endl;
         };
         file << "|" << std::endl;
     };
