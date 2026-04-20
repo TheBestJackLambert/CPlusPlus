@@ -36,7 +36,6 @@ class contact{
     };
 };
 
-
 std::map <std::string, contact> contacts;
 std::vector <std::string> tempcontact;
 std::string content;
