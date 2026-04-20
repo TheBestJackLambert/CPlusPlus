@@ -8,6 +8,7 @@
 #include <map>
 #include <list>
 #include <cstdlib>
+#include <ncurses.h>
 
 class object{
     public:
@@ -28,20 +29,19 @@ class collision{
 
 class rgb{
     public:
-    int r;
-    int g;
-    int b;
+    short r;
+    short g;
+    short b;
 };
 
-constexpr double pi = 3.14159265358979323846;
+double pi = 3.14159265358979323846;
 std::string line;
 object nobject;
 std::map <std::string, object> shapes;
-std::list<std::list<float>> colors;
-float fov = pi/3;
-float speed = .5;
-float xpos;
-float ypos;
+float fov;
+float speed;
+float x;
+float y;
 float angle;
 float sinner;
 float cosser;
@@ -50,6 +50,10 @@ float oldx;
 float oldy;
 float dist;
 float count;
+float range;
+float facing;
+float sensitivity;
+int direction;
 collision check;
 
 std::istream& operator>>(std::istream& is, object& obj){
@@ -82,6 +86,7 @@ void importobjects(std::string file){
         shapes[name] = current;
     };
 };
+
 
 collision checker(float x, float y, object shape){
     collision result;
@@ -121,25 +126,38 @@ collision checker(float x, float y, object shape){
     };
     return result;
 };
-int main(){
-    importobjects("objects.txt");
-    for(float j = -10; j < 10; j++){
+
+void display(std::list<std::list<float>> color, int row){
+    int counter = 0;
+    for (const auto& i: color){
+        counter++;
+        rgb rbg = hsl_to_rgb(i.front(), 1, i.back());
+        init_color(counter, rbg.r * 1000/255, rbg.g * 1000/255, rbg.b* 1000/255);
+        init_pair(counter, COLOR_WHITE, counter);
+        attron(COLOR_PAIR(counter));
+        mvaddch(row, counter, ' ');
+    };
+};
+
+std::list<std::list<float>> calculate(float xpo, float ypo, float looking){
+    std::list<std::list<float>> colors;
+    for(float j = -range/2; j <range/2; j++){
         colors.push_back({0,0});
-        angle = j/20 * fov;
-        xpos = -10;
-        ypos = 0;
+        angle = j/range * fov + looking;
         stren = 1;
         dist = 1;
         count = 0;
-        for(int t = 0; t < 100; t++){
-            dist *= .95;
+        float xpos = xpo;
+        float ypos = ypo;
+        for(int t = 0; t < 1000; t++){
+            dist *= .975;
             sinner = std::sin(angle);
             cosser = std::cos(angle);
             oldx = xpos;
             oldy = ypos;
             xpos += cosser * speed;
             ypos += sinner * speed;
-            for (auto [name, shape] : shapes){
+            for (const auto& [name, shape] : shapes){
                 check = checker(xpos, ypos, shape);
                 if (check.coll){
                     colors.back().front() += stren * shape.color;
@@ -161,8 +179,71 @@ int main(){
         }
         colors.back().front() = hue;
     };
-    for (const auto& i: colors){
-        rgb rbg = hsl_to_rgb(i.front(), 1, i.back());
-        printf("\033[48;2;%d;%d;%dm \033[0m", rbg.r, rbg.g, rbg.b);
+    return colors;
+};
+
+int main(){
+    importobjects("objects.txt");
+    fov = pi/2;
+    speed = .5;
+    x = -10;
+    y = 10;
+    facing = -pi/6;
+    range = 60;
+    sensitivity = pi/16;
+    initscr();
+    keypad(stdscr, TRUE);
+    cbreak();
+    noecho();
+    nodelay(stdscr, true);
+    start_color();
+    while (true){
+        direction = getch();
+        if (direction != ERR){
+            clear();
+            if (direction == 'q'){
+                break;
+            }
+            else{
+                if(direction == 'w' | direction == 's' | direction == 'a' | direction == 'd'){
+                    if(direction == 'w' | direction == 's'){
+                        if (direction == 'w'){
+                            y += sin(facing);
+                            x += cos(facing);
+                        }
+                        else{
+                            y -= sin(facing);
+                            x -= cos(facing);
+                        }
+                    }
+                    else{
+                        if (direction == 'a'){
+                            y -= cos(facing);
+                            x += sin(facing);
+                        }
+                        else{
+                            y += cos(facing);
+                            x -= sin(facing);
+                        }
+                    }
+                }
+                else{
+                    if (direction == KEY_LEFT){
+                        facing -= sensitivity;
+                    }
+                    else{
+                        if (direction == KEY_RIGHT){
+                            facing += sensitivity;
+                        }
+                    }
+                }
+            }
+            auto pixels = calculate(x, y, facing);
+        for (int i = 0; i < 15; i++){
+            display(pixels, i);
+        };
+        refresh();
+        napms(1);
+        };
     };
 };

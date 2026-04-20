@@ -1,7 +1,7 @@
 |
 jonathan
 square
-0
+-5
 0
 1
 0
@@ -10,8 +10,8 @@ square
 robertathan
 circle 
 10
-0
+1
 9
 0
-240
+280
 |
