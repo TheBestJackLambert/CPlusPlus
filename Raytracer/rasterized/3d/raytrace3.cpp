@@ -10,16 +10,6 @@
 #include <cstdlib>
 #include <ncurses.h>
 
-class object{
-    public:
-    std::string type;
-    float x;
-    float y;
-    float size;
-    float angle;
-    int color;
-    
-};
 
 class collision{
     public:
@@ -34,9 +24,23 @@ class rgb{
     short b;
 };
 
+class coordinate{
+    public:
+    float x;
+    float y;
+    float z;
+};
+
+class triangle{
+    public:
+    coordinate one;
+    coordinate two;
+    coordinate three;
+    int color;
+};
+
 double pi = 3.14159265358979323846;
 std::string line;
-object nobject;
 std::map <std::string, object> shapes;
 float fov;
 float speed;
@@ -51,14 +55,11 @@ float oldy;
 float dist;
 float count;
 float range;
+float height;
 float facing;
 float sensitivity;
+float theta;
 int direction;
-collision check;
-
-std::istream& operator>>(std::istream& is, object& obj){
-    return is >> obj.type >> obj.x >> obj.y >> obj.size >> obj.angle >> obj.color;
-};
 
 rgb hsl_to_rgb(float h, float s, float l){
     rgb output;
@@ -78,6 +79,10 @@ rgb hsl_to_rgb(float h, float s, float l){
     return output;
 };
 
+std::istream& operator>>(std::istream& is, object& obj){
+    return is >> obj.type >> obj.x >> obj.y >> obj.size >> obj.angle >> obj.color;
+};
+
 void importobjects(std::string file){
     std::ifstream read(file);
     std::string sep, name;
@@ -85,46 +90,6 @@ void importobjects(std::string file){
     while (read >> sep >> name >> current){
         shapes[name] = current;
     };
-};
-
-
-collision checker(float x, float y, object shape){
-    collision result;
-    result.coll = false;
-    result.angle = shape.angle;
-    if (shape.type == "circle"){
-        float dist = std::pow(x-shape.x, 2) + std::pow(y-shape.y, 2);
-        if( dist <= shape.size * shape.size){
-            result.coll = true;
-            result.angle = std::atan2((y-shape.y), (x-shape.x));
-        };
-        return result;
-    };
-    if (shape.type == "square"){
-        float newx = x;
-        float newy = y;
-        if( shape.angle != 0){
-            newx = shape.x + (x - shape.x)*std::cos(-shape.angle) - (y - shape.y)*std::sin(-shape.angle);
-            newy = shape.y + (x - shape.x)*std::sin(-shape.angle) + (y - shape.y)*std::cos(-shape.angle);
-        };
-        if ((shape.size > std::abs(shape.x - newx)) && (shape.size > std::abs(shape.y - newy))){
-            result.coll = true;
-            if (std::abs(shape.y - newy) > std::abs(shape.x - newx)){
-                if (0 < (shape.y - newy)){
-                    result.angle += pi/2;
-                }
-                else{
-                    result.angle -= pi/2;
-                };
-            }   
-            else{
-                if (0 > (shape.x - newx)){
-                    result.angle += pi;
-                };
-            };
-        };
-    };
-    return result;
 };
 
 void display(std::list<std::list<float>> color, int row){
@@ -139,8 +104,14 @@ void display(std::list<std::list<float>> color, int row){
     };
 };
 
-std::list<std::list<float>> calculate(float xpo, float ypo, float looking){
+std::list<std::list<std::list<float>>> calculate(float xpo, float ypo, float zpo, float looking){
     std::list<std::list<float>> colors;
+    for (const auto& [name, shape] : shapes){
+        
+        for(int i = -height/2; i < he ight/2; i++){
+            theta = i/range * fov;
+        }
+    };
     for(float j = -range/2; j <range/2; j++){
         colors.push_back({0,0});
         angle = j/range * fov + looking;
@@ -149,41 +120,11 @@ std::list<std::list<float>> calculate(float xpo, float ypo, float looking){
         count = 0;
         float xpos = xpo;
         float ypos = ypo;
-        for(int t = 0; t < 1000; t++){
-            dist *= .975;
-            sinner = std::sin(angle);
-            cosser = std::cos(angle);
-            oldx = xpos;
-            oldy = ypos;
-            xpos += cosser * speed;
-            ypos += sinner * speed;
-            for (const auto& [name, shape] : shapes){
-                check = checker(xpos, ypos, shape);
-                if (check.coll){
-                    colors.back().front() += stren * shape.color;
-                    colors.back().back() += dist * stren/2;
-                    count += stren;
-                    stren *= .5;
-                    angle = 2 * check.angle- angle + pi;
-                    xpos = oldx;
-                    ypos = oldy;
-                };
-            };
-        };
-        if (count != 0){
-            colors.back().front() /= count;
-        };
-        float hue = fmod(colors.back().front(), 360.0f);
-        while (hue < 0){
-            hue += 360;
-        }
-        colors.back().front() = hue;
-    };
-    return colors;
-};
+        float zpos = zpo;
+}
 
 int main(){
-    importobjects("objects.txt");
+    importobjects("object.txt");
     fov = pi/2;
     speed = .5;
     x = -10;
@@ -191,6 +132,7 @@ int main(){
     facing = -pi/6;
     range = 60;
     sensitivity = pi/16;
+    height = 16;
     initscr();
     keypad(stdscr, TRUE);
     cbreak();
@@ -238,9 +180,9 @@ int main(){
                     }
                 }
             }
-            auto pixels = calculate(x, y, facing);
-        for (int i = 0; i < 15; i++){
-            display(pixels, i);
+        auto pixels = calculate(x, y, z, facing);
+        for (int i = -height/2; i < height/2; i++){
+            display(pixels[i], i);
         };
         refresh();
         napms(1);

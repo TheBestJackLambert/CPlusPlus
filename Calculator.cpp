@@ -44,8 +44,10 @@ class number{
     float value() const {
         return num;
     };
-    };
+};
+
 const std::string oplist[4] = {"add", "sub", "mult", "div"};
+
 bool valid(std::string str) {
     const auto& ops = oplist;
     for(auto i : ops){
@@ -65,8 +67,7 @@ int main() {
     operations["div"]  = [&num](float n) { num.div(n); };
     std::string op;
 
-   do
-    {
+    do {
         std::cout << "What operation?" << std::endl;
         std::cin >> op;
         if (valid(op)){
@@ -76,7 +77,8 @@ int main() {
             std::cout << num.value() << std::endl;
         }
 
-    } while (valid(op));
+    } 
+    while (valid(op));
 
     std::cout << num.value() << std::endl;
 
